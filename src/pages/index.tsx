@@ -11,6 +11,7 @@ import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
+import { DEFAULT_ASSETS } from "@/features/constants/pngTuberAssets";
 // import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
@@ -243,15 +244,7 @@ export default function Home() {
           onReady={() => {
             console.log("PNGTuber is ready");
           }}
-          assets={{
-            video: "/assets/assets14/pinkchan_mouthless_h264.mp4",
-            track: "/assets/assets14/mouth_track.json",
-            mouth_closed: "/assets/assets14/mouth/closed.png",
-            mouth_open: "/assets/assets14/mouth/open.png",
-            mouth_half: "/assets/assets14/mouth/half.png",
-            mouth_e: "/assets/assets14/mouth/e.png",
-            mouth_u: "/assets/assets14/mouth/u.png",
-          }}
+          assets={DEFAULT_ASSETS}
         />
       )}
       <MessageInputContainer
