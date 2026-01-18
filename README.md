@@ -4,7 +4,7 @@ ChatPNGTuberは、ChatVRM/MotionPNGTuber_Playerをベースに開発された、
 
 ## 主な機能
 
-- 2D MotionPNGTuberの表示と会話
+- MotionPNGTuberの表示と会話
 
 ## 使用技術
 
