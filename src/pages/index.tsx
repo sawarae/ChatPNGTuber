@@ -28,7 +28,6 @@ export default function Home() {
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
   const [openAiKey, setOpenAiKey] = useState("");
-  const [koeiromapKey, setKoeiromapKey] = useState("");
   const [koeiroParam, setKoeiroParam] = useState<KoeiroParam>(DEFAULT_PARAM);
   const [chatProcessing, setChatProcessing] = useState(false);
   const [chatLog, setChatLog] = useState<Message[]>([]);
@@ -75,12 +74,12 @@ export default function Home() {
       onEnd?: () => void
     ) => {
       if (viewerMode === "VRM") {
-        speakCharacter(screenplay, viewer, koeiromapKey, onStart, onEnd);
+        speakCharacter(screenplay, viewer, "", onStart, onEnd);
       } else if (viewerMode === "PNGTuber") {
-        speakCharacterPNG(screenplay, lipsyncEngineRef.current, koeiromapKey, onStart, onEnd);
+        speakCharacterPNG(screenplay, lipsyncEngineRef.current, "", onStart, onEnd);
       }
     },
-    [viewerMode, viewer, koeiromapKey]
+    [viewerMode, viewer]
   );
 
   /**
@@ -200,9 +199,7 @@ export default function Home() {
       <Meta />
       <Introduction
         openAiKey={openAiKey}
-        koeiroMapKey={koeiromapKey}
         onChangeAiKey={setOpenAiKey}
-        onChangeKoeiromapKey={setKoeiromapKey}
       />
       {viewerMode === "VRM" ? (
         <VrmViewer />
@@ -225,7 +222,6 @@ export default function Home() {
         chatLog={chatLog}
         koeiroParam={koeiroParam}
         assistantMessage={assistantMessage}
-        koeiromapKey={koeiromapKey}
         viewerMode={viewerMode}
         onChangeAiKey={setOpenAiKey}
         onChangeSystemPrompt={setSystemPrompt}
@@ -234,7 +230,6 @@ export default function Home() {
         onChangeViewerMode={setViewerMode}
         handleClickResetChatLog={() => setChatLog([])}
         handleClickResetSystemPrompt={() => setSystemPrompt(SYSTEM_PROMPT)}
-        onChangeKoeiromapKey={setKoeiromapKey}
       />
       <GitHubLink />
     </div>

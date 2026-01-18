@@ -1,70 +1,73 @@
 import { wait } from "@/utils/wait";
-import { synthesizeVoiceApi } from "./synthesizeVoice";
 import { Viewer } from "../vrmViewer/viewer";
 import { Screenplay } from "./messages";
 import { Talk } from "./messages";
+import { waitForVoices } from "./synthesizeSpeechWeb";
 
 const createSpeakCharacter = () => {
-  let lastTime = 0;
-  let prevFetchPromise: Promise<unknown> = Promise.resolve();
   let prevSpeakPromise: Promise<unknown> = Promise.resolve();
+  let currentUtterance: SpeechSynthesisUtterance | null = null;
 
   return (
     screenplay: Screenplay,
     viewer: Viewer,
-    koeiroApiKey: string,
+    _unusedApiKey: string,
     onStart?: () => void,
     onComplete?: () => void
   ) => {
-    const fetchPromise = prevFetchPromise.then(async () => {
-      const now = Date.now();
-      if (now - lastTime < 1000) {
-        await wait(1000 - (now - lastTime));
+    prevSpeakPromise = prevSpeakPromise.then(async () => {
+      onStart?.();
+
+      // Stop any ongoing speech
+      if (currentUtterance) {
+        window.speechSynthesis.cancel();
       }
 
-      const buffer = await fetchAudio(screenplay.talk, koeiroApiKey).catch(
-        () => null
-      );
-      lastTime = Date.now();
-      return buffer;
-    });
-
-    prevFetchPromise = fetchPromise;
-    prevSpeakPromise = Promise.all([fetchPromise, prevSpeakPromise]).then(
-      ([audioBuffer]) => {
-        onStart?.();
-        if (!audioBuffer) {
-          return;
-        }
-        return viewer.model?.speak(audioBuffer, screenplay);
+      const text = screenplay.talk.message;
+      if (!text) {
+        onComplete?.();
+        return;
       }
-    );
-    prevSpeakPromise.then(() => {
-      onComplete?.();
+
+      // Wait for voices to be available
+      await waitForVoices();
+
+      // Create speech utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      currentUtterance = utterance;
+
+      // Configure voice settings
+      utterance.lang = 'ja-JP';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Select Japanese voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const japaneseVoice = voices.find(v => v.lang.startsWith('ja'));
+      if (japaneseVoice) {
+        utterance.voice = japaneseVoice;
+      }
+
+      return new Promise<void>((resolve) => {
+        utterance.onend = () => {
+          currentUtterance = null;
+          onComplete?.();
+          resolve();
+        };
+
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event.error);
+          currentUtterance = null;
+          onComplete?.();
+          resolve();
+        };
+
+        // Speak
+        window.speechSynthesis.speak(utterance);
+      });
     });
   };
 };
 
 export const speakCharacter = createSpeakCharacter();
-
-export const fetchAudio = async (
-  talk: Talk,
-  apiKey: string
-): Promise<ArrayBuffer> => {
-  const ttsVoice = await synthesizeVoiceApi(
-    talk.message,
-    talk.speakerX,
-    talk.speakerY,
-    talk.style,
-    apiKey
-  );
-  const url = ttsVoice.audio;
-
-  if (url == null) {
-    throw new Error("Something went wrong");
-  }
-
-  const resAudio = await fetch(url);
-  const buffer = await resAudio.arrayBuffer();
-  return buffer;
-};

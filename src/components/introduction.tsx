@@ -3,15 +3,11 @@ import { Link } from "./link";
 
 type Props = {
   openAiKey: string;
-  koeiroMapKey: string;
   onChangeAiKey: (openAiKey: string) => void;
-  onChangeKoeiromapKey: (koeiromapKey: string) => void;
 };
 export const Introduction = ({
   openAiKey,
-  koeiroMapKey,
   onChangeAiKey,
-  onChangeKoeiromapKey,
 }: Props) => {
   const [opened, setOpened] = useState(true);
 
@@ -20,13 +16,6 @@ export const Introduction = ({
       onChangeAiKey(event.target.value);
     },
     [onChangeAiKey]
-  );
-
-  const handleKoeiromapKeyChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      onChangeKoeiromapKey(event.target.value);
-    },
-    [onChangeKoeiromapKey]
   );
 
   return opened ? (
@@ -58,20 +47,16 @@ export const Introduction = ({
               label={"ChatGPT API"}
             />
             、 音声合成には
-            <Link url={"https://koemotion.rinna.co.jp/"} label={"Koemotion"} />
-            の
             <Link
-              url={
-                "https://developers.rinna.co.jp/product/#product=koeiromap-free"
-              }
-              label={"Koeiromap API"}
+              url={"https://developer.mozilla.org/ja/docs/Web/API/Web_Speech_API"}
+              label={"Web Speech API"}
             />
-            を使用しています。 詳細はこちらの
+            、 2D PNGTuberには
             <Link
-              url={"https://inside.pixiv.blog/2023/04/28/160000"}
-              label={"技術解説記事"}
+              url={"https://github.com/rotejin/MotionPNGTuber_Player"}
+              label={"MotionPNGTuber"}
             />
-            をご覧ください。
+            を使用しています。
           </div>
           <div className="my-16">
             このデモはGitHubでソースコードを公開しています。自由に変更や改変をお試しください！
@@ -93,25 +78,6 @@ export const Introduction = ({
           </div>
         </div>
 
-        <div className="my-24">
-          <div className="my-8 font-bold typography-20 text-secondary">
-            Koeiromap APIキー
-          </div>
-          <input
-            type="text"
-            placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-            value={koeiroMapKey}
-            onChange={handleKoeiromapKeyChange}
-            className="my-4 px-16 py-8 w-full h-40 bg-surface3 hover:bg-surface3-hover rounded-4 text-ellipsis"
-          ></input>
-          <div>
-            APIキーはrinna Developersから発行してください。
-            <Link
-              url="https://developers.rinna.co.jp/product/#product=koeiromap-free"
-              label="詳細はこちら"
-            />
-          </div>
-        </div>
         <div className="my-24">
           <div className="my-8 font-bold typography-20 text-secondary">
             OpenAI APIキー

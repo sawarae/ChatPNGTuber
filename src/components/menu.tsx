@@ -15,7 +15,6 @@ type Props = {
   chatLog: Message[];
   koeiroParam: KoeiroParam;
   assistantMessage: string;
-  koeiromapKey: string;
   viewerMode: ViewerMode;
   onChangeSystemPrompt: (systemPrompt: string) => void;
   onChangeAiKey: (key: string) => void;
@@ -24,7 +23,6 @@ type Props = {
   onChangeViewerMode: (mode: ViewerMode) => void;
   handleClickResetChatLog: () => void;
   handleClickResetSystemPrompt: () => void;
-  onChangeKoeiromapKey: (key: string) => void;
 };
 export const Menu = ({
   openAiKey,
@@ -32,7 +30,6 @@ export const Menu = ({
   chatLog,
   koeiroParam,
   assistantMessage,
-  koeiromapKey,
   viewerMode,
   onChangeSystemPrompt,
   onChangeAiKey,
@@ -41,7 +38,6 @@ export const Menu = ({
   onChangeViewerMode,
   handleClickResetChatLog,
   handleClickResetSystemPrompt,
-  onChangeKoeiromapKey,
 }: Props) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
@@ -60,13 +56,6 @@ export const Menu = ({
       onChangeAiKey(event.target.value);
     },
     [onChangeAiKey]
-  );
-
-  const handleChangeKoeiromapKey = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      onChangeKoeiromapKey(event.target.value);
-    },
-    [onChangeKoeiromapKey]
   );
 
   const handleChangeKoeiroParam = useCallback(
@@ -139,7 +128,6 @@ export const Menu = ({
           chatLog={chatLog}
           systemPrompt={systemPrompt}
           koeiroParam={koeiroParam}
-          koeiromapKey={koeiromapKey}
           viewerMode={viewerMode}
           onClickClose={() => setShowSettings(false)}
           onChangeAiKey={handleAiKeyChange}
@@ -150,7 +138,6 @@ export const Menu = ({
           onClickOpenVrmFile={handleClickOpenVrmFile}
           onClickResetChatLog={handleClickResetChatLog}
           onClickResetSystemPrompt={handleClickResetSystemPrompt}
-          onChangeKoeiromapKey={handleChangeKoeiromapKey}
         />
       )}
       {!showChatLog && assistantMessage && (
