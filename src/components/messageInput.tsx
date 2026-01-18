@@ -30,14 +30,21 @@ export const MessageInput = ({
               disabled={isChatProcessing}
               onClick={onClickMicButton}
             />
-            <input
-              type="text"
-              placeholder="聞きたいことをいれてね"
+            <textarea
+              placeholder="聞きたいことをいれてね（Shift+Enterで改行、Enterで送信）"
               onChange={onChangeUserMessage}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!userMessage.trim() || isChatProcessing) return;
+                  onClickSendButton(({} as unknown) as React.MouseEvent<HTMLButtonElement>);
+                }
+              }}
               disabled={isChatProcessing}
-              className="bg-surface1 hover:bg-surface1-hover focus:bg-surface1 disabled:bg-surface1-disabled disabled:text-primary-disabled rounded-16 w-full px-16 text-text-primary typography-16 font-bold disabled"
+              className="bg-surface1 hover:bg-surface1-hover focus:bg-surface1 disabled:bg-surface1-disabled disabled:text-primary-disabled rounded-16 w-full px-16 py-12 text-text-primary typography-16 font-bold resize-none"
               value={userMessage}
-            ></input>
+              rows={2}
+            />
 
             <IconButton
               iconName="24/Send"

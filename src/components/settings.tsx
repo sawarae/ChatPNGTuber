@@ -42,8 +42,8 @@ export const Settings = ({
   onClickResetSystemPrompt,
 }: Props) => {
   return (
-    <div className="absolute z-40 w-full h-full bg-white/80 backdrop-blur ">
-      <div className="absolute m-24">
+    <div className="fixed z-40 inset-0 bg-white/80 backdrop-blur">
+      <div className="absolute top-6 right-6">
         <IconButton
           iconName="24/Close"
           isProcessing={false}

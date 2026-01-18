@@ -11,20 +11,21 @@ import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
-import { getChatResponseStream } from "@/features/chat/claudeChat";
+// import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
-import { GitHubLink } from "@/components/githubLink";
 import { Meta } from "@/components/meta";
 import { PNGTuberViewer } from "@/components/pngTuberViewer";
 import { LipsyncEngine } from "@/features/pngTuber/lipsyncEngine";
+import { LipSync } from "@/features/messages/speakCharacterPNG";
 
 type ViewerMode = "VRM" | "PNGTuber";
 
 export default function Home() {
   const { viewer } = useContext(ViewerContext);
-  const [viewerMode, setViewerMode] = useState<ViewerMode>("VRM");
+  const [viewerMode, setViewerMode] = useState<ViewerMode>("PNGTuber");
   const lipsyncEngineRef = useRef<LipsyncEngine | null>(null);
+  const lipSyncRef = useRef<LipSync | null>(null);
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
   const [koeiroParam, setKoeiroParam] = useState<KoeiroParam>(DEFAULT_PARAM);
@@ -75,10 +76,10 @@ export default function Home() {
       if (viewerMode === "VRM") {
         speakCharacter(screenplay, viewer, "", onStart, onEnd);
       } else if (viewerMode === "PNGTuber") {
-        speakCharacterPNG(screenplay, lipsyncEngineRef.current, "", onStart, onEnd);
+        speakCharacterPNG(screenplay, lipSyncRef.current, "", onStart, onEnd);
       }
     },
-    [viewerMode, viewer]
+    [viewerMode, viewer, lipSyncRef]
   );
 
   /**
@@ -98,7 +99,50 @@ export default function Home() {
       ];
       setChatLog(messageLog);
 
-      // Claudeへ
+      // Call Google Gemini API
+      const messages: Message[] = [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        ...messageLog,
+      ];
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiMessage = data.message;
+
+        // AIの返答を音声合成して再生
+        const aiTalks = textsToScreenplay([aiMessage], koeiroParam);
+        handleSpeakAi(aiTalks[0]);
+
+        // アシスタントの返答をログに追加
+        const messageLogAssistant: Message[] = [
+          ...messageLog,
+          { role: "assistant", content: aiMessage },
+        ];
+
+        setChatLog(messageLogAssistant);
+      } catch (error) {
+        console.error("Chat error:", error);
+      } finally {
+        setChatProcessing(false);
+      }
+
+      // Removed: Claude streaming API - kept for reference
+      /*
       const messages: Message[] = [
         {
           role: "system",
@@ -108,7 +152,7 @@ export default function Home() {
       ];
 
       const stream = await getChatResponseStream(messages).catch(
-        (e) => {
+        (e: any) => {
           console.error(e);
           return null;
         }
@@ -130,14 +174,12 @@ export default function Home() {
 
           receivedMessage += value;
 
-          // 返答内容のタグ部分の検出
           const tagMatch = receivedMessage.match(/^\[(.*?)\]/);
           if (tagMatch && tagMatch[0]) {
             tag = tagMatch[0];
             receivedMessage = receivedMessage.slice(tag.length);
           }
 
-          // 返答を一文単位で切り出して処理する
           const sentenceMatch = receivedMessage.match(
             /^(.+[。．！？\n]|.{10,}[、,])/
           );
@@ -148,7 +190,6 @@ export default function Home() {
               .slice(sentence.length)
               .trimStart();
 
-            // 発話不要/不可能な文字列だった場合はスキップ
             if (
               !sentence.replace(
                 /^[\s\[\(\{「［（【『〈《〔｛«‹〘〚〛〙›»〕》〉』】）］」\}\)\]]+$/g,
@@ -162,7 +203,6 @@ export default function Home() {
             const aiTalks = textsToScreenplay([aiText], koeiroParam);
             aiTextLog += aiText;
 
-            // 文ごとに音声を生成 & 再生、返答を表示
             const currentAssistantMessage = sentences.join(" ");
             handleSpeakAi(aiTalks[0], () => {
               setAssistantMessage(currentAssistantMessage);
@@ -176,7 +216,6 @@ export default function Home() {
         reader.releaseLock();
       }
 
-      // アシスタントの返答をログに追加
       const messageLogAssistant: Message[] = [
         ...messageLog,
         { role: "assistant", content: aiTextLog },
@@ -184,6 +223,7 @@ export default function Home() {
 
       setChatLog(messageLogAssistant);
       setChatProcessing(false);
+      */
     },
     [systemPrompt, chatLog, handleSpeakAi, koeiroParam]
   );
@@ -198,8 +238,19 @@ export default function Home() {
         <PNGTuberViewer
           className="fixed top-0 left-0 w-screen h-screen -z-10"
           engineRef={lipsyncEngineRef}
+          lipSyncRef={lipSyncRef}
+          debug={true}
           onReady={() => {
             console.log("PNGTuber is ready");
+          }}
+          assets={{
+            video: "/assets/assets14/pinkchan_mouthless_h264.mp4",
+            track: "/assets/assets14/mouth_track.json",
+            mouth_closed: "/assets/assets14/mouth/closed.png",
+            mouth_open: "/assets/assets14/mouth/open.png",
+            mouth_half: "/assets/assets14/mouth/half.png",
+            mouth_e: "/assets/assets14/mouth/e.png",
+            mouth_u: "/assets/assets14/mouth/u.png",
           }}
         />
       )}
@@ -220,7 +271,6 @@ export default function Home() {
         handleClickResetChatLog={() => setChatLog([])}
         handleClickResetSystemPrompt={() => setSystemPrompt(SYSTEM_PROMPT)}
       />
-      <GitHubLink />
     </div>
   );
 }
