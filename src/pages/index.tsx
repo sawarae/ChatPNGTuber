@@ -11,7 +11,7 @@ import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
-import { getChatResponseStream } from "@/features/chat/claudeChat";
+// import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
 import { GitHubLink } from "@/components/githubLink";
@@ -98,7 +98,50 @@ export default function Home() {
       ];
       setChatLog(messageLog);
 
-      // Claudeへ
+      // Call Google Gemini API
+      const messages: Message[] = [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        ...messageLog,
+      ];
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiMessage = data.message;
+
+        // AIの返答を音声合成して再生
+        const aiTalks = textsToScreenplay([aiMessage], koeiroParam);
+        handleSpeakAi(aiTalks[0]);
+
+        // アシスタントの返答をログに追加
+        const messageLogAssistant: Message[] = [
+          ...messageLog,
+          { role: "assistant", content: aiMessage },
+        ];
+
+        setChatLog(messageLogAssistant);
+      } catch (error) {
+        console.error("Chat error:", error);
+      } finally {
+        setChatProcessing(false);
+      }
+
+      // Removed: Claude streaming API - kept for reference
+      /*
       const messages: Message[] = [
         {
           role: "system",
@@ -108,7 +151,7 @@ export default function Home() {
       ];
 
       const stream = await getChatResponseStream(messages).catch(
-        (e) => {
+        (e: any) => {
           console.error(e);
           return null;
         }
@@ -130,14 +173,12 @@ export default function Home() {
 
           receivedMessage += value;
 
-          // 返答内容のタグ部分の検出
           const tagMatch = receivedMessage.match(/^\[(.*?)\]/);
           if (tagMatch && tagMatch[0]) {
             tag = tagMatch[0];
             receivedMessage = receivedMessage.slice(tag.length);
           }
 
-          // 返答を一文単位で切り出して処理する
           const sentenceMatch = receivedMessage.match(
             /^(.+[。．！？\n]|.{10,}[、,])/
           );
@@ -148,7 +189,6 @@ export default function Home() {
               .slice(sentence.length)
               .trimStart();
 
-            // 発話不要/不可能な文字列だった場合はスキップ
             if (
               !sentence.replace(
                 /^[\s\[\(\{「［（【『〈《〔｛«‹〘〚〛〙›»〕》〉』】）］」\}\)\]]+$/g,
@@ -162,7 +202,6 @@ export default function Home() {
             const aiTalks = textsToScreenplay([aiText], koeiroParam);
             aiTextLog += aiText;
 
-            // 文ごとに音声を生成 & 再生、返答を表示
             const currentAssistantMessage = sentences.join(" ");
             handleSpeakAi(aiTalks[0], () => {
               setAssistantMessage(currentAssistantMessage);
@@ -176,7 +215,6 @@ export default function Home() {
         reader.releaseLock();
       }
 
-      // アシスタントの返答をログに追加
       const messageLogAssistant: Message[] = [
         ...messageLog,
         { role: "assistant", content: aiTextLog },
@@ -184,6 +222,7 @@ export default function Home() {
 
       setChatLog(messageLogAssistant);
       setChatProcessing(false);
+      */
     },
     [systemPrompt, chatLog, handleSpeakAi, koeiroParam]
   );
