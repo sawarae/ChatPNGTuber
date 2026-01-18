@@ -84,7 +84,7 @@ export const Menu = ({
 
   return (
     <>
-      <div className="absolute z-10 m-24">
+      <div className="fixed z-50 m-24 top-0 left-0">
         <div className="grid grid-flow-col gap-[8px]">
           <IconButton
             iconName="24/Menu"

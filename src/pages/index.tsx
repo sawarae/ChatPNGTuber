@@ -14,7 +14,6 @@ import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
 // import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
-import { GitHubLink } from "@/components/githubLink";
 import { Meta } from "@/components/meta";
 import { PNGTuberViewer } from "@/components/pngTuberViewer";
 import { LipsyncEngine } from "@/features/pngTuber/lipsyncEngine";
@@ -269,7 +268,6 @@ export default function Home() {
         handleClickResetChatLog={() => setChatLog([])}
         handleClickResetSystemPrompt={() => setSystemPrompt(SYSTEM_PROMPT)}
       />
-      <GitHubLink />
     </div>
   );
 }
