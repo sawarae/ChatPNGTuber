@@ -23,7 +23,7 @@ type ViewerMode = "VRM" | "PNGTuber";
 
 export default function Home() {
   const { viewer } = useContext(ViewerContext);
-  const [viewerMode, setViewerMode] = useState<ViewerMode>("VRM");
+  const [viewerMode, setViewerMode] = useState<ViewerMode>("PNGTuber");
   const lipsyncEngineRef = useRef<LipsyncEngine | null>(null);
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
@@ -237,8 +237,18 @@ export default function Home() {
         <PNGTuberViewer
           className="fixed top-0 left-0 w-screen h-screen -z-10"
           engineRef={lipsyncEngineRef}
+          debug={true}
           onReady={() => {
             console.log("PNGTuber is ready");
+          }}
+          assets={{
+            video: "/assets/assets14/pinkchan_mouthless_h264.mp4",
+            track: "/assets/assets14/mouth_track.json",
+            mouth_closed: "/assets/assets14/mouth/closed.png",
+            mouth_open: "/assets/assets14/mouth/open.png",
+            mouth_half: "/assets/assets14/mouth/half.png",
+            mouth_e: "/assets/assets14/mouth/e.png",
+            mouth_u: "/assets/assets14/mouth/u.png",
           }}
         />
       )}
