@@ -13,7 +13,6 @@ import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
 import { DEFAULT_ASSETS } from "@/features/constants/pngTuberAssets";
 // import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
-import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
 import { Meta } from "@/components/meta";
 import { PNGTuberViewer } from "@/components/pngTuberViewer";
@@ -232,7 +231,6 @@ export default function Home() {
   return (
     <div className={"font-M_PLUS_2"}>
       <Meta />
-      <Introduction />
       {viewerMode === "VRM" ? (
         <VrmViewer />
       ) : (
