@@ -1,22 +1,9 @@
 import { useState, useCallback } from "react";
 import { Link } from "./link";
 
-type Props = {
-  openAiKey: string;
-  onChangeAiKey: (openAiKey: string) => void;
-};
-export const Introduction = ({
-  openAiKey,
-  onChangeAiKey,
-}: Props) => {
+type Props = {};
+export const Introduction = ({}: Props) => {
   const [opened, setOpened] = useState(true);
-
-  const handleAiKeyChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      onChangeAiKey(event.target.value);
-    },
-    [onChangeAiKey]
-  );
 
   return opened ? (
     <div className="absolute z-40 w-full h-full px-24 py-40  bg-black/30 font-M_PLUS_2">
@@ -80,28 +67,20 @@ export const Introduction = ({
 
         <div className="my-24">
           <div className="my-8 font-bold typography-20 text-secondary">
-            OpenAI APIキー
+            API設定について
           </div>
-          <input
-            type="text"
-            placeholder="sk-..."
-            value={openAiKey}
-            onChange={handleAiKeyChange}
-            className="my-4 px-16 py-8 w-full h-40 bg-surface3 hover:bg-surface3-hover rounded-4 text-ellipsis"
-          ></input>
           <div>
-            APIキーは
+            このアプリケーションは
             <Link
-              url="https://platform.openai.com/account/api-keys"
-              label="OpenAIのサイト"
+              url="https://console.anthropic.com/"
+              label="Claude API"
             />
-            で取得できます。取得したAPIキーをフォームに入力してください。
+            を使用しています。APIキーは環境変数（.env.local）に設定されています。
           </div>
           <div className="my-16">
-            ChatGPT
-            APIはブラウザから直接アクセスしています。また、APIキーや会話内容はピクシブのサーバには保存されません。
+            ※ サーバー側でAPI通信を行うため、会話内容がサーバーを経由します。
             <br />
-            ※利用しているモデルはChatGPT API (GPT-3.5)です。
+            ※ 利用しているモデルはClaude 3.5 Sonnet (2024-10-22)です。
           </div>
         </div>
         <div className="my-24">
@@ -111,7 +90,7 @@ export const Introduction = ({
             }}
             className="font-bold bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled text-white px-24 py-8 rounded-oval"
           >
-            APIキーを入力してはじめる
+            はじめる
           </button>
         </div>
       </div>

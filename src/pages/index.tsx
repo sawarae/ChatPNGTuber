@@ -11,7 +11,7 @@ import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
-import { getChatResponseStream } from "@/features/chat/openAiChat";
+import { getChatResponseStream } from "@/features/chat/claudeChat";
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
 import { GitHubLink } from "@/components/githubLink";
@@ -27,7 +27,6 @@ export default function Home() {
   const lipsyncEngineRef = useRef<LipsyncEngine | null>(null);
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
-  const [openAiKey, setOpenAiKey] = useState("");
   const [koeiroParam, setKoeiroParam] = useState<KoeiroParam>(DEFAULT_PARAM);
   const [chatProcessing, setChatProcessing] = useState(false);
   const [chatLog, setChatLog] = useState<Message[]>([]);
@@ -87,11 +86,6 @@ export default function Home() {
    */
   const handleSendChat = useCallback(
     async (text: string) => {
-      if (!openAiKey) {
-        setAssistantMessage("APIキーが入力されていません");
-        return;
-      }
-
       const newMessage = text;
 
       if (newMessage == null) return;
@@ -104,7 +98,7 @@ export default function Home() {
       ];
       setChatLog(messageLog);
 
-      // Chat GPTへ
+      // Claudeへ
       const messages: Message[] = [
         {
           role: "system",
@@ -113,7 +107,7 @@ export default function Home() {
         ...messageLog,
       ];
 
-      const stream = await getChatResponseStream(messages, openAiKey).catch(
+      const stream = await getChatResponseStream(messages).catch(
         (e) => {
           console.error(e);
           return null;
@@ -191,16 +185,13 @@ export default function Home() {
       setChatLog(messageLogAssistant);
       setChatProcessing(false);
     },
-    [systemPrompt, chatLog, handleSpeakAi, openAiKey, koeiroParam]
+    [systemPrompt, chatLog, handleSpeakAi, koeiroParam]
   );
 
   return (
     <div className={"font-M_PLUS_2"}>
       <Meta />
-      <Introduction
-        openAiKey={openAiKey}
-        onChangeAiKey={setOpenAiKey}
-      />
+      <Introduction />
       {viewerMode === "VRM" ? (
         <VrmViewer />
       ) : (
@@ -217,13 +208,11 @@ export default function Home() {
         onChatProcessStart={handleSendChat}
       />
       <Menu
-        openAiKey={openAiKey}
         systemPrompt={systemPrompt}
         chatLog={chatLog}
         koeiroParam={koeiroParam}
         assistantMessage={assistantMessage}
         viewerMode={viewerMode}
-        onChangeAiKey={setOpenAiKey}
         onChangeSystemPrompt={setSystemPrompt}
         onChangeChatLog={handleChangeChatLog}
         onChangeKoeiromapParam={setKoeiroParam}

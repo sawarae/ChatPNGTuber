@@ -14,13 +14,11 @@ import { Link } from "./link";
 type ViewerMode = "VRM" | "PNGTuber";
 
 type Props = {
-  openAiKey: string;
   systemPrompt: string;
   chatLog: Message[];
   koeiroParam: KoeiroParam;
   viewerMode: ViewerMode;
   onClickClose: () => void;
-  onChangeAiKey: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onChangeSystemPrompt: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onChangeChatLog: (index: number, text: string) => void;
   onChangeKoeiroParam: (x: number, y: number) => void;
@@ -30,14 +28,12 @@ type Props = {
   onClickResetSystemPrompt: () => void;
 };
 export const Settings = ({
-  openAiKey,
   chatLog,
   systemPrompt,
   koeiroParam,
   viewerMode,
   onClickClose,
   onChangeSystemPrompt,
-  onChangeAiKey,
   onChangeChatLog,
   onChangeKoeiroParam,
   onChangeViewerMode,
@@ -58,27 +54,19 @@ export const Settings = ({
         <div className="text-text1 max-w-3xl mx-auto px-24 py-64 ">
           <div className="my-24 typography-32 font-bold">設定</div>
           <div className="my-24">
-            <div className="my-16 typography-20 font-bold">OpenAI API キー</div>
-            <input
-              className="text-ellipsis px-16 py-8 w-col-span-2 bg-surface1 hover:bg-surface1-hover rounded-8"
-              type="text"
-              placeholder="sk-..."
-              value={openAiKey}
-              onChange={onChangeAiKey}
-            />
+            <div className="my-16 typography-20 font-bold">AI API について</div>
             <div>
-              APIキーは
+              このアプリケーションは
               <Link
-                url="https://platform.openai.com/account/api-keys"
-                label="OpenAIのサイト"
+                url="https://console.anthropic.com/"
+                label="Claude API"
               />
-              で取得できます。取得したAPIキーをフォームに入力してください。
+              を使用しています。APIキーは環境変数（.env.local）で設定されています。
             </div>
             <div className="my-16">
-              ChatGPT
-              APIはブラウザから直接アクセスしています。また、APIキーや会話内容はピクシブのサーバには保存されません。
+              ※ サーバー側でAPI通信を行います。
               <br />
-              ※利用しているモデルはChatGPT API (GPT-3.5)です。
+              ※ 利用しているモデルはClaude 3.5 Sonnet (2024-10-22)です。
             </div>
           </div>
           <div className="my-40">
