@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import VrmViewer from "@/components/vrmViewer";
 import { ViewerContext } from "@/features/vrmViewer/viewerContext";
 import {
@@ -7,6 +7,7 @@ import {
   Screenplay,
 } from "@/features/messages/messages";
 import { speakCharacter } from "@/features/messages/speakCharacter";
+import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
@@ -15,9 +16,15 @@ import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
 import { GitHubLink } from "@/components/githubLink";
 import { Meta } from "@/components/meta";
+import { PNGTuberViewer } from "@/components/pngTuberViewer";
+import { LipsyncEngine } from "@/features/pngTuber/lipsyncEngine";
+
+type ViewerMode = "VRM" | "PNGTuber";
 
 export default function Home() {
   const { viewer } = useContext(ViewerContext);
+  const [viewerMode, setViewerMode] = useState<ViewerMode>("VRM");
+  const lipsyncEngineRef = useRef<LipsyncEngine | null>(null);
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
   const [openAiKey, setOpenAiKey] = useState("");
@@ -67,9 +74,13 @@ export default function Home() {
       onStart?: () => void,
       onEnd?: () => void
     ) => {
-      speakCharacter(screenplay, viewer, koeiromapKey, onStart, onEnd);
+      if (viewerMode === "VRM") {
+        speakCharacter(screenplay, viewer, koeiromapKey, onStart, onEnd);
+      } else if (viewerMode === "PNGTuber") {
+        speakCharacterPNG(screenplay, lipsyncEngineRef.current, koeiromapKey, onStart, onEnd);
+      }
     },
-    [viewer, koeiromapKey]
+    [viewerMode, viewer, koeiromapKey]
   );
 
   /**
@@ -193,7 +204,17 @@ export default function Home() {
         onChangeAiKey={setOpenAiKey}
         onChangeKoeiromapKey={setKoeiromapKey}
       />
-      <VrmViewer />
+      {viewerMode === "VRM" ? (
+        <VrmViewer />
+      ) : (
+        <PNGTuberViewer
+          className="fixed top-0 left-0 w-screen h-screen -z-10"
+          engineRef={lipsyncEngineRef}
+          onReady={() => {
+            console.log("PNGTuber is ready");
+          }}
+        />
+      )}
       <MessageInputContainer
         isChatProcessing={chatProcessing}
         onChatProcessStart={handleSendChat}
@@ -205,10 +226,12 @@ export default function Home() {
         koeiroParam={koeiroParam}
         assistantMessage={assistantMessage}
         koeiromapKey={koeiromapKey}
+        viewerMode={viewerMode}
         onChangeAiKey={setOpenAiKey}
         onChangeSystemPrompt={setSystemPrompt}
         onChangeChatLog={handleChangeChatLog}
         onChangeKoeiromapParam={setKoeiroParam}
+        onChangeViewerMode={setViewerMode}
         handleClickResetChatLog={() => setChatLog([])}
         handleClickResetSystemPrompt={() => setSystemPrompt(SYSTEM_PROMPT)}
         onChangeKoeiromapKey={setKoeiromapKey}

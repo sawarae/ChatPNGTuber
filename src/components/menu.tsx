@@ -7,6 +7,8 @@ import { Settings } from "./settings";
 import { ViewerContext } from "@/features/vrmViewer/viewerContext";
 import { AssistantText } from "./assistantText";
 
+type ViewerMode = "VRM" | "PNGTuber";
+
 type Props = {
   openAiKey: string;
   systemPrompt: string;
@@ -14,10 +16,12 @@ type Props = {
   koeiroParam: KoeiroParam;
   assistantMessage: string;
   koeiromapKey: string;
+  viewerMode: ViewerMode;
   onChangeSystemPrompt: (systemPrompt: string) => void;
   onChangeAiKey: (key: string) => void;
   onChangeChatLog: (index: number, text: string) => void;
   onChangeKoeiromapParam: (param: KoeiroParam) => void;
+  onChangeViewerMode: (mode: ViewerMode) => void;
   handleClickResetChatLog: () => void;
   handleClickResetSystemPrompt: () => void;
   onChangeKoeiromapKey: (key: string) => void;
@@ -29,10 +33,12 @@ export const Menu = ({
   koeiroParam,
   assistantMessage,
   koeiromapKey,
+  viewerMode,
   onChangeSystemPrompt,
   onChangeAiKey,
   onChangeChatLog,
   onChangeKoeiromapParam,
+  onChangeViewerMode,
   handleClickResetChatLog,
   handleClickResetSystemPrompt,
   onChangeKoeiromapKey,
@@ -134,11 +140,13 @@ export const Menu = ({
           systemPrompt={systemPrompt}
           koeiroParam={koeiroParam}
           koeiromapKey={koeiromapKey}
+          viewerMode={viewerMode}
           onClickClose={() => setShowSettings(false)}
           onChangeAiKey={handleAiKeyChange}
           onChangeSystemPrompt={handleChangeSystemPrompt}
           onChangeChatLog={onChangeChatLog}
           onChangeKoeiroParam={handleChangeKoeiroParam}
+          onChangeViewerMode={onChangeViewerMode}
           onClickOpenVrmFile={handleClickOpenVrmFile}
           onClickResetChatLog={handleClickResetChatLog}
           onClickResetSystemPrompt={handleClickResetSystemPrompt}

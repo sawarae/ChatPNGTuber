@@ -11,17 +11,21 @@ import {
 } from "@/features/constants/koeiroParam";
 import { Link } from "./link";
 
+type ViewerMode = "VRM" | "PNGTuber";
+
 type Props = {
   openAiKey: string;
   systemPrompt: string;
   chatLog: Message[];
   koeiroParam: KoeiroParam;
   koeiromapKey: string;
+  viewerMode: ViewerMode;
   onClickClose: () => void;
   onChangeAiKey: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onChangeSystemPrompt: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onChangeChatLog: (index: number, text: string) => void;
   onChangeKoeiroParam: (x: number, y: number) => void;
+  onChangeViewerMode: (mode: ViewerMode) => void;
   onClickOpenVrmFile: () => void;
   onClickResetChatLog: () => void;
   onClickResetSystemPrompt: () => void;
@@ -33,11 +37,13 @@ export const Settings = ({
   systemPrompt,
   koeiroParam,
   koeiromapKey,
+  viewerMode,
   onClickClose,
   onChangeSystemPrompt,
   onChangeAiKey,
   onChangeChatLog,
   onChangeKoeiroParam,
+  onChangeViewerMode,
   onClickOpenVrmFile,
   onClickResetChatLog,
   onClickResetSystemPrompt,
@@ -77,6 +83,30 @@ export const Settings = ({
               APIはブラウザから直接アクセスしています。また、APIキーや会話内容はピクシブのサーバには保存されません。
               <br />
               ※利用しているモデルはChatGPT API (GPT-3.5)です。
+            </div>
+          </div>
+          <div className="my-40">
+            <div className="my-16 typography-20 font-bold">
+              ビューアーモード
+            </div>
+            <div className="my-8 flex gap-4">
+              <TextButton
+                onClick={() => onChangeViewerMode("VRM")}
+                className={viewerMode === "VRM" ? "bg-primary text-white" : ""}
+              >
+                VRM (3D)
+              </TextButton>
+              <TextButton
+                onClick={() => onChangeViewerMode("PNGTuber")}
+                className={viewerMode === "PNGTuber" ? "bg-primary text-white" : ""}
+              >
+                PNGTuber (2D)
+              </TextButton>
+            </div>
+            <div className="my-8 text-sm text-secondary">
+              {viewerMode === "VRM"
+                ? "3D VRMモデルを使用します。VRMファイルを読み込んでキャラクターを変更できます。"
+                : "2D MotionPNGTuberを使用します。フォルダを選択してキャラクターを読み込んでください。"}
             </div>
           </div>
           <div className="my-40">
