@@ -5,16 +5,16 @@ ChatPNGTuberは、ChatVRMをベースに開発された、ブラウザで3Dキ�
 ## 主な機能
 
 - 3D VRMモデルまたは2D MotionPNGTuberの表示と会話
-- Claude 3.5 Sonnet APIを使用した自然な会話生成
-- Web Speech APIによる音声合成
-- テキストベースのリップシンク（PNGTuberモード）
+- Google Gemini APIを使用した自然な会話生成
+- Google Cloud Text-to-Speech APIによる高品質な音声合成
+- リアルタイムリップシンク（PNGTuberモード）
 - 表情や感情表現を含んだ返答
 
 ## 使用技術
 
 - **音声認識**: [Web Speech API (SpeechRecognition)](https://developer.mozilla.org/ja/docs/Web/API/SpeechRecognition)
-- **会話生成**: [Claude API](https://docs.anthropic.com/claude/reference/getting-started-with-the-api)
-- **音声合成**: [Web Speech API (SpeechSynthesis)](https://developer.mozilla.org/ja/docs/Web/API/SpeechSynthesis)
+- **会話生成**: [Google Gemini API](https://ai.google.dev/gemini-api/docs)
+- **音声合成**: [Google Cloud Text-to-Speech API](https://cloud.google.com/text-to-speech)
 - **3Dキャラクター**: [@pixiv/three-vrm](https://github.com/pixiv/three-vrm)
 - **2D PNGTuber**: [MotionPNGTuber](https://github.com/rotejin/MotionPNGTuber_Player)
 
@@ -35,18 +35,45 @@ npm install
 
 ### 3. 環境変数の設定
 
-`.env.local`ファイルをプロジェクトのルートディレクトリに作成し、Claude APIキーを設定してください。
+`.env.local`ファイルをプロジェクトのルートディレクトリに作成し、以下の設定を行ってください。
 
 ```bash
 # .env.local
-ANTHROPIC_API_KEY=your_api_key_here
+
+# Google Gemini API Key (会話生成用)
+# https://aistudio.google.com/app/apikey から取得
+GOOGLE_API_KEY=your-google-api-key-here
+VERTEX_AI_MODEL=gemini-2.5-flash-lite
+
+# Google Cloud Text-to-Speech API (音声合成用)
+# サービスアカウントのJSON認証情報
+# Option 1: JSON内容を直接設定（Vercelなどへのデプロイ時に推奨）
+GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"..."}
+
+# Option 2: JSONファイルのパスを設定（ローカル開発時に推奨）
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 ```
 
-Claude APIキーの取得方法：
-1. [Anthropic Console](https://console.anthropic.com/)にアクセス
-2. アカウントを作成またはログイン
-3. API Keysセクションから新しいAPIキーを作成
-4. 作成されたAPIキーを`.env.local`に貼り付け
+#### Google Gemini APIキーの取得
+
+1. [Google AI Studio](https://aistudio.google.com/app/apikey)にアクセス
+2. 「Create API Key」をクリック
+3. 生成されたAPIキーを`.env.local`の`GOOGLE_API_KEY`に設定
+
+#### Google Cloud Text-to-Speech APIの設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
+2. プロジェクトを作成または選択
+3. [Cloud Text-to-Speech API](https://console.cloud.google.com/apis/library/texttospeech.googleapis.com)を有効化
+4. サービスアカウントを作成：
+   - 左メニュー「IAMと管理」→「サービスアカウント」
+   - 「サービスアカウントを作成」をクリック
+   - 名前を入力（例: `tts-service-account`）
+5. サービスアカウントキー（JSON）を作成：
+   - 作成したサービスアカウントをクリック
+   - 「キー」タブ→「鍵を追加」→「新しい鍵を作成」
+   - 「JSON」を選択して作成
+6. ダウンロードしたJSONファイルの内容を`.env.local`に設定
 
 **注意**: `.env.local`ファイルは`.gitignore`に含まれているため、Gitリポジトリにコミットされません。
 
@@ -81,28 +108,33 @@ npm run build
 npm start
 ```
 
-## Claude API について
+## Google APIs について
 
-このアプリケーションは、会話生成にClaude 3.5 Sonnet (2024-10-22) APIを使用しています。
+### Gemini API（会話生成）
 
+このアプリケーションは、会話生成にGoogle Gemini APIを使用しています。
+
+- 軽量で高速なモデル（gemini-2.5-flash-lite）を使用
 - APIリクエストはサーバーサイド（Next.js API Routes）で処理されます
 - APIキーは環境変数として安全に管理されます
-- 利用規約: [https://www.anthropic.com/legal/aup](https://www.anthropic.com/legal/aup)
-- APIドキュメント: [https://docs.anthropic.com/](https://docs.anthropic.com/)
+- ドキュメント: [https://ai.google.dev/gemini-api/docs](https://ai.google.dev/gemini-api/docs)
 
-## 音声合成について
+### Text-to-Speech API（音声合成）
 
-Web Speech APIを使用した無料の音声合成を実装しています。
+Google Cloud Text-to-Speech APIを使用した高品質な音声合成を実装しています。
 
-- ブラウザとOSにインストールされている日本語音声を使用
-- APIキー不要
-- オフラインでも動作（音声がインストールされている場合）
+- Neural2音声モデルを使用した自然な日本語音声
+- デフォルト音声: `ja-JP-Neural2-B`
+- リアルタイム音声解析によるリップシンク対応（PNGTuberモード）
+- サービスアカウント認証による安全なAPI呼び出し
+- ドキュメント: [https://cloud.google.com/text-to-speech/docs](https://cloud.google.com/text-to-speech/docs)
 
 ## 注意事項
 
 - 差別的または暴力的な発言、特定の人物を貶めるような発言を意図的に誘導しないでください
 - VRMモデルを使用する際は、モデルの利用条件に従ってください
 - MotionPNGTuberアセットを使用する際は、各アセットの利用規約を確認してください
+- Google Cloud APIの使用には料金が発生する場合があります
 
 ## ライセンス
 

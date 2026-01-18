@@ -1,22 +1,18 @@
-import { LipsyncEngine } from "../pngTuber/lipsyncEngine";
-import { TextBasedLipsync } from "../pngTuber/textBasedLipsync";
+import { LipSync } from "../lipSync/lipSync";
 import { Screenplay } from "./messages";
-import { waitForVoices } from "./synthesizeSpeechWeb";
 
 const createSpeakCharacterPNG = () => {
   let prevSpeakPromise: Promise<unknown> = Promise.resolve();
-  let currentUtterance: SpeechSynthesisUtterance | null = null;
-  const textLipsync = new TextBasedLipsync();
 
   return async (
     screenplay: Screenplay,
-    lipsyncEngine: LipsyncEngine | null,
+    lipSync: LipSync | null,
     _unusedApiKey: string,
     onStart?: () => void,
     onComplete?: () => void
   ) => {
-    if (!lipsyncEngine) {
-      console.warn("LipsyncEngine not available");
+    if (!lipSync) {
+      console.warn("LipSync not available");
       onComplete?.();
       return;
     }
@@ -24,72 +20,62 @@ const createSpeakCharacterPNG = () => {
     prevSpeakPromise = prevSpeakPromise.then(async () => {
       onStart?.();
 
-      // Stop any ongoing speech
-      if (currentUtterance) {
-        window.speechSynthesis.cancel();
-        textLipsync.stop();
-      }
-
       const text = screenplay.talk.message;
       if (!text) {
         onComplete?.();
         return;
       }
 
-      // Wait for voices to be available
-      await waitForVoices();
+      try {
+        // Call GCP Text-to-Speech API
+        const response = await fetch("/api/gcp-tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            languageCode: "ja-JP",
+            voiceName: "ja-JP-Neural2-B",
+          }),
+        });
 
-      // Create speech utterance
-      const utterance = new SpeechSynthesisUtterance(text);
-      currentUtterance = utterance;
-
-      // Configure voice settings
-      utterance.lang = 'ja-JP';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Select Japanese voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const japaneseVoice = voices.find(v => v.lang.startsWith('ja'));
-      if (japaneseVoice) {
-        utterance.voice = japaneseVoice;
-      }
-
-      // Start text-based lip sync animation
-      const lipsyncPromise = textLipsync.animate(
-        text,
-        utterance.rate,
-        (data) => {
-          lipsyncEngine.processAudioData(data);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "TTS request failed");
         }
-      );
 
-      return new Promise<void>((resolve) => {
-        utterance.onend = async () => {
-          currentUtterance = null;
-          // Wait for lip sync to complete
-          await lipsyncPromise;
-          // Reset to closed mouth
-          lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
-          onComplete?.();
-          resolve();
-        };
+        const data = await response.json();
+        const audioBase64 = data.audio;
 
-        utterance.onerror = async (event) => {
-          console.error('Speech synthesis error:', event.error);
-          currentUtterance = null;
-          textLipsync.stop();
-          lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
-          onComplete?.();
-          resolve();
-        };
+        // Convert base64 to ArrayBuffer
+        const binaryString = atob(audioBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBuffer = bytes.buffer;
 
-        // Speak
-        window.speechSynthesis.speak(utterance);
-      });
+        // Resume AudioContext if suspended (required for browser autoplay policy)
+        if (lipSync.audio.state === 'suspended') {
+          console.log('[PNGLipsync] Resuming suspended AudioContext');
+          await lipSync.audio.resume();
+        }
+        // Play audio using LipSync class (following VRM pattern)
+        await new Promise<void>((resolve) => {
+          lipSync.playFromArrayBuffer(audioBuffer, () => {
+            console.log('[PNGLipsync] Playback ended');
+            onComplete?.();
+            resolve();
+          });
+        });
+      } catch (error) {
+        console.error("GCP TTS error:", error);
+        onComplete?.();
+      }
     });
   };
 };
 
 export const speakCharacterPNG = createSpeakCharacterPNG();
+export { LipSync };

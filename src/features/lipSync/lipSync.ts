@@ -5,25 +5,27 @@ const TIME_DOMAIN_DATA_LENGTH = 2048;
 export class LipSync {
   public readonly audio: AudioContext;
   public readonly analyser: AnalyserNode;
-  public readonly timeDomainData: Float32Array;
+  public readonly timeDomainData: Float32Array<ArrayBuffer>;
 
   public constructor(audio: AudioContext) {
     this.audio = audio;
 
     this.analyser = audio.createAnalyser();
-    this.timeDomainData = new Float32Array(TIME_DOMAIN_DATA_LENGTH);
+    this.analyser.fftSize = 2048;
+    this.analyser.smoothingTimeConstant = 0.8;
+    this.timeDomainData = new Float32Array(TIME_DOMAIN_DATA_LENGTH) as Float32Array<ArrayBuffer>;
   }
 
   public update(): LipSyncAnalyzeResult {
     this.analyser.getFloatTimeDomainData(this.timeDomainData);
 
-    let volume = 0.0;
+    let rawVolume = 0.0;
     for (let i = 0; i < TIME_DOMAIN_DATA_LENGTH; i++) {
-      volume = Math.max(volume, Math.abs(this.timeDomainData[i]));
+      rawVolume = Math.max(rawVolume, Math.abs(this.timeDomainData[i]));
     }
 
     // cook
-    volume = 1 / (1 + Math.exp(-45 * volume + 5));
+    let volume = 1 / (1 + Math.exp(-45 * rawVolume + 5));
     if (volume < 0.1) volume = 0;
 
     return {
