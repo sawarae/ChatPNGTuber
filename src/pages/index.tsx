@@ -17,6 +17,7 @@ import { Menu } from "@/components/menu";
 import { Meta } from "@/components/meta";
 import { PNGTuberViewer } from "@/components/pngTuberViewer";
 import { LipsyncEngine } from "@/features/pngTuber/lipsyncEngine";
+import { LipSync } from "@/features/messages/speakCharacterPNG";
 
 type ViewerMode = "VRM" | "PNGTuber";
 
@@ -24,6 +25,7 @@ export default function Home() {
   const { viewer } = useContext(ViewerContext);
   const [viewerMode, setViewerMode] = useState<ViewerMode>("PNGTuber");
   const lipsyncEngineRef = useRef<LipsyncEngine | null>(null);
+  const lipSyncRef = useRef<LipSync | null>(null);
 
   const [systemPrompt, setSystemPrompt] = useState(SYSTEM_PROMPT);
   const [koeiroParam, setKoeiroParam] = useState<KoeiroParam>(DEFAULT_PARAM);
@@ -74,10 +76,10 @@ export default function Home() {
       if (viewerMode === "VRM") {
         speakCharacter(screenplay, viewer, "", onStart, onEnd);
       } else if (viewerMode === "PNGTuber") {
-        speakCharacterPNG(screenplay, lipsyncEngineRef.current, "", onStart, onEnd);
+        speakCharacterPNG(screenplay, lipSyncRef.current, "", onStart, onEnd);
       }
     },
-    [viewerMode, viewer]
+    [viewerMode, viewer, lipSyncRef]
   );
 
   /**
@@ -236,6 +238,7 @@ export default function Home() {
         <PNGTuberViewer
           className="fixed top-0 left-0 w-screen h-screen -z-10"
           engineRef={lipsyncEngineRef}
+          lipSyncRef={lipSyncRef}
           debug={true}
           onReady={() => {
             console.log("PNGTuber is ready");

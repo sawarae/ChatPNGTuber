@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { LipsyncEngine, LipsyncEngineAssets } from '@/features/pngTuber/lipsyncEngine';
 import { AudioCapture } from '@/features/pngTuber/audioCapture';
+import { LipSync } from '@/features/messages/speakCharacterPNG';
 
 interface PNGTuberViewerProps {
   assets?: LipsyncEngineAssets;
@@ -8,6 +9,7 @@ interface PNGTuberViewerProps {
   onReady?: () => void;
   debug?: boolean;
   engineRef?: React.RefObject<LipsyncEngine | null>;
+  lipSyncRef?: React.RefObject<LipSync | null>;
 }
 
 export const PNGTuberViewer: React.FC<PNGTuberViewerProps> = ({
@@ -16,17 +18,31 @@ export const PNGTuberViewer: React.FC<PNGTuberViewerProps> = ({
   onReady,
   debug = false,
   engineRef: externalEngineRef,
+  lipSyncRef: externalLipSyncRef,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const internalEngineRef = useRef<LipsyncEngine | null>(null);
   const audioCaptureRef = useRef<AudioCapture | null>(null);
+  const internalLipSyncRef = useRef<LipSync | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Create LipSync instance once and persist it across re-renders
+  useEffect(() => {
+    if (!internalLipSyncRef.current) {
+      internalLipSyncRef.current = new LipSync(new AudioContext());
+    }
+    // Sync with external ref
+    if (externalLipSyncRef) {
+      (externalLipSyncRef as React.MutableRefObject<LipSync | null>).current = internalLipSyncRef.current;
+    }
+  }, [externalLipSyncRef]);
 
   useEffect(() => {
     if (!videoRef.current || !canvasRef.current || !stageRef.current) return;
 
-    // Initialize AudioCapture
+    // Initialize AudioCapture (for microphone input if needed)
     const audioCapture = new AudioCapture({
       onVolumeData: (data) => {
         internalEngineRef.current?.processAudioData(data);
@@ -57,7 +73,7 @@ export const PNGTuberViewer: React.FC<PNGTuberViewerProps> = ({
             onReady();
           }
         },
-        onVolumeChange: (volume) => {
+        onVolumeChange: () => {
           // Can be used to update UI volume meter
         },
         onPlayStateChange: (isPlaying) => {
@@ -70,18 +86,41 @@ export const PNGTuberViewer: React.FC<PNGTuberViewerProps> = ({
       assets: assets || null,
       options: {
         debug,
-        hqAudioEnabled: true,
-        sensitivity: 50,
+        hqAudioEnabled: false,
+        sensitivity: 30,
       },
     });
     internalEngineRef.current = engine;
 
-    // Sync with external ref if provided
+    // Sync with external ref
     if (externalEngineRef) {
       (externalEngineRef as React.MutableRefObject<LipsyncEngine | null>).current = engine;
     }
 
+    // Update loop - use the persistent LipSync instance from ref
+    const update = () => {
+      const lipSync = internalLipSyncRef.current;
+      if (lipSync && internalEngineRef.current) {
+        const { volume } = lipSync.update();
+
+        // Convert volume to audio data format for LipsyncEngine
+        const rms = volume * 2;
+
+
+        internalEngineRef.current.processAudioData({
+          rms,
+          low: volume,
+          high: volume
+        });
+      }
+      animationFrameRef.current = requestAnimationFrame(update);
+    };
+    update();
+
     return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       engine.cleanup();
       audioCapture.stop();
       if (externalEngineRef) {
