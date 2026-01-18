@@ -100,36 +100,39 @@ export const PNGTuberViewer: React.FC<PNGTuberViewerProps> = ({
   );
 
   return (
-    <div className={`relative ${className}`}>
-      <div ref={stageRef} className="relative w-full h-full">
-        <video
-          ref={videoRef}
-          className="absolute top-0 left-0 w-full h-full object-contain"
-          playsInline
-          muted
-        />
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
-        />
+    <>
+      <div className={`relative ${className}`}>
+        <div ref={stageRef} className="relative w-full h-full">
+          <video
+            ref={videoRef}
+            className="absolute top-0 left-0 w-full h-full object-contain"
+            playsInline
+            muted
+          />
+          <canvas
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
+          />
+        </div>
       </div>
 
       {!assets && (
-        <div className="absolute top-4 left-4 z-10">
-          <label className="px-4 py-2 bg-white bg-opacity-80 rounded cursor-pointer hover:bg-opacity-100 transition-colors">
+        <div className="fixed top-4 left-4 z-50">
+          <label className="px-4 py-2 bg-white bg-opacity-80 rounded cursor-pointer hover:bg-opacity-100 transition-colors shadow-lg">
             <input
               type="file"
-              // @ts-ignore
-              webkitdirectory="true"
+              // @ts-ignore - webkitdirectory is non-standard but widely supported
+              webkitdirectory=""
+              directory=""
               multiple
               onChange={handleFolderSelect}
               className="hidden"
             />
-            <span className="text-sm">Select PNGTuber Folder</span>
+            <span className="text-sm font-medium">Select PNGTuber Folder</span>
           </label>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
