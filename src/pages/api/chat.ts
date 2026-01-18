@@ -1,5 +1,3 @@
-import { Configuration, OpenAIApi } from "openai";
-
 import type { NextApiRequest, NextApiResponse } from "next";
 
 type Data = {
@@ -10,7 +8,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
-  const apiKey = req.body.apiKey || process.env.OPEN_AI_KEY;
+  const apiKey = req.body.apiKey || process.env.GOOGLE_API_KEY;
+  const model = process.env.VERTEX_AI_MODEL || "gemini-2.5-flash-lite";
 
   if (!apiKey) {
     res
@@ -20,19 +19,41 @@ export default async function handler(
     return;
   }
 
-  const configuration = new Configuration({
-    apiKey: apiKey,
-  });
+  try {
+    // Convert OpenAI-style messages to Vertex AI format
+    const messages = req.body.messages || [];
+    const contents = messages.map((msg: any) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
 
-  const openai = new OpenAIApi(configuration);
+    const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${apiKey}`;
 
-  const { data } = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: req.body.messages,
-  });
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: contents,
+      }),
+    });
 
-  const [aiRes] = data.choices;
-  const message = aiRes.message?.content || "エラーが発生しました";
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Vertex AI Error:", errorData);
+      res.status(response.status).json({
+        message: errorData.error?.message || "エラーが発生しました"
+      });
+      return;
+    }
 
-  res.status(200).json({ message: message });
+    const data = await response.json();
+    const message = data.candidates?.[0]?.content?.parts?.[0]?.text || "エラーが発生しました";
+
+    res.status(200).json({ message: message });
+  } catch (error) {
+    console.error("Vertex AI Error:", error);
+    res.status(500).json({ message: "エラーが発生しました" });
+  }
 }
