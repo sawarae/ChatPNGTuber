@@ -11,7 +11,7 @@ import { speakCharacterPNG } from "@/features/messages/speakCharacterPNG";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
-import { DEFAULT_ASSETS } from "@/features/constants/pngTuberAssets";
+import { getAssets, PNGTuberAssets } from "@/features/constants/pngTuberAssets";
 // import { getChatResponseStream } from "@/features/chat/claudeChat"; // Removed: Using Google Gemini API instead
 import { Menu } from "@/components/menu";
 import { Meta } from "@/components/meta";
@@ -32,6 +32,12 @@ export default function Home() {
   const [chatProcessing, setChatProcessing] = useState(false);
   const [chatLog, setChatLog] = useState<Message[]>([]);
   const [assistantMessage, setAssistantMessage] = useState("");
+  const [assets, setAssets] = useState<PNGTuberAssets | null>(null);
+
+  useEffect(() => {
+    // Load assets on mount
+    getAssets().then(setAssets);
+  }, []);
 
   useEffect(() => {
     if (window.localStorage.getItem("chatVRMParams")) {
@@ -233,7 +239,7 @@ export default function Home() {
       <Meta />
       {viewerMode === "VRM" ? (
         <VrmViewer />
-      ) : (
+      ) : assets ? (
         <PNGTuberViewer
           className="fixed top-0 left-0 w-screen h-screen -z-10"
           engineRef={lipsyncEngineRef}
@@ -242,8 +248,12 @@ export default function Home() {
           onReady={() => {
             console.log("PNGTuber is ready");
           }}
-          assets={DEFAULT_ASSETS}
+          assets={assets}
         />
+      ) : (
+        <div className="fixed top-0 left-0 w-screen h-screen -z-10 flex items-center justify-center">
+          <p>Loading assets...</p>
+        </div>
       )}
       <MessageInputContainer
         isChatProcessing={chatProcessing}
