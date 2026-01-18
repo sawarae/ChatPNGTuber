@@ -1,12 +1,63 @@
 import { LipsyncEngine } from "../pngTuber/lipsyncEngine";
-import { TextBasedLipsync } from "../pngTuber/textBasedLipsync";
 import { Screenplay } from "./messages";
-import { waitForVoices } from "./synthesizeSpeechWeb";
 
 const createSpeakCharacterPNG = () => {
   let prevSpeakPromise: Promise<unknown> = Promise.resolve();
-  let currentUtterance: SpeechSynthesisUtterance | null = null;
-  const textLipsync = new TextBasedLipsync();
+  let currentAudio: HTMLAudioElement | null = null;
+  let audioContext: AudioContext | null = null;
+  let analyserNode: AnalyserNode | null = null;
+  let animationId: number | null = null;
+
+  const stopCurrentAudio = () => {
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+  };
+
+  const analyzeAudio = (
+    analyser: AnalyserNode,
+    lipsyncEngine: LipsyncEngine
+  ) => {
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const analyze = () => {
+      if (!currentAudio) return;
+
+      analyser.getByteFrequencyData(dataArray);
+
+      // Calculate RMS and frequency bands
+      let sum = 0;
+      let lowSum = 0;
+      let highSum = 0;
+      const midPoint = Math.floor(bufferLength / 2);
+
+      for (let i = 0; i < bufferLength; i++) {
+        const value = dataArray[i] / 255;
+        sum += value * value;
+        if (i < midPoint) {
+          lowSum += value;
+        } else {
+          highSum += value;
+        }
+      }
+
+      const rms = Math.sqrt(sum / bufferLength);
+      const low = lowSum / midPoint;
+      const high = highSum / (bufferLength - midPoint);
+
+      lipsyncEngine.processAudioData({ rms, low, high });
+
+      animationId = requestAnimationFrame(analyze);
+    };
+
+    analyze();
+  };
 
   return async (
     screenplay: Screenplay,
@@ -25,10 +76,7 @@ const createSpeakCharacterPNG = () => {
       onStart?.();
 
       // Stop any ongoing speech
-      if (currentUtterance) {
-        window.speechSynthesis.cancel();
-        textLipsync.stop();
-      }
+      stopCurrentAudio();
 
       const text = screenplay.talk.message;
       if (!text) {
@@ -36,58 +84,83 @@ const createSpeakCharacterPNG = () => {
         return;
       }
 
-      // Wait for voices to be available
-      await waitForVoices();
+      try {
+        // Call GCP Text-to-Speech API
+        const response = await fetch("/api/gcp-tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            languageCode: "ja-JP",
+            voiceName: "ja-JP-Neural2-B",
+          }),
+        });
 
-      // Create speech utterance
-      const utterance = new SpeechSynthesisUtterance(text);
-      currentUtterance = utterance;
-
-      // Configure voice settings
-      utterance.lang = 'ja-JP';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Select Japanese voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const japaneseVoice = voices.find(v => v.lang.startsWith('ja'));
-      if (japaneseVoice) {
-        utterance.voice = japaneseVoice;
-      }
-
-      // Start text-based lip sync animation
-      const lipsyncPromise = textLipsync.animate(
-        text,
-        utterance.rate,
-        (data) => {
-          lipsyncEngine.processAudioData(data);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "TTS request failed");
         }
-      );
 
-      return new Promise<void>((resolve) => {
-        utterance.onend = async () => {
-          currentUtterance = null;
-          // Wait for lip sync to complete
-          await lipsyncPromise;
-          // Reset to closed mouth
-          lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
-          onComplete?.();
-          resolve();
-        };
+        const data = await response.json();
+        const audioBase64 = data.audio;
 
-        utterance.onerror = async (event) => {
-          console.error('Speech synthesis error:', event.error);
-          currentUtterance = null;
-          textLipsync.stop();
-          lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
-          onComplete?.();
-          resolve();
-        };
+        // Create audio element
+        const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+        currentAudio = audio;
 
-        // Speak
-        window.speechSynthesis.speak(utterance);
-      });
+        // Setup Web Audio API for analyzing audio for lipsync
+        if (!audioContext) {
+          audioContext = new AudioContext();
+        }
+
+        // Resume audio context if suspended
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        const sourceNode = audioContext.createMediaElementSource(audio);
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.smoothingTimeConstant = 0.3;
+
+        sourceNode.connect(analyserNode);
+        analyserNode.connect(audioContext.destination);
+
+        return new Promise<void>((resolve) => {
+          audio.onended = () => {
+            stopCurrentAudio();
+            // Reset to closed mouth
+            lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
+            onComplete?.();
+            resolve();
+          };
+
+          audio.onerror = (event) => {
+            console.error("Audio playback error:", event);
+            stopCurrentAudio();
+            lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
+            onComplete?.();
+            resolve();
+          };
+
+          // Start analyzing audio for lipsync
+          analyzeAudio(analyserNode!, lipsyncEngine);
+
+          audio.play().catch((error) => {
+            console.error("Audio play error:", error);
+            stopCurrentAudio();
+            lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
+            onComplete?.();
+            resolve();
+          });
+        });
+      } catch (error) {
+        console.error("GCP TTS error:", error);
+        lipsyncEngine.processAudioData({ rms: 0, low: 0, high: 0 });
+        onComplete?.();
+      }
     });
   };
 };
