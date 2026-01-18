@@ -49,31 +49,46 @@ const createSpeakCharacter = () => {
         const data = await response.json();
         const audioBase64 = data.audio;
 
-        // Create audio element and play
-        const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-        currentAudio = audio;
+        // Convert base64 to ArrayBuffer for VRM lipsync
+        const binaryString = atob(audioBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBuffer = bytes.buffer;
 
-        return new Promise<void>((resolve) => {
-          audio.onended = () => {
-            currentAudio = null;
-            onComplete?.();
-            resolve();
-          };
+        // Use VRM model's speak method for lipsync
+        if (viewer.model) {
+          await viewer.model.speak(audioBuffer, screenplay);
+          onComplete?.();
+        } else {
+          console.warn("VRM model not loaded, playing audio without lipsync");
+          // Fallback to regular audio playback
+          const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+          currentAudio = audio;
 
-          audio.onerror = (event) => {
-            console.error("Audio playback error:", event);
-            currentAudio = null;
-            onComplete?.();
-            resolve();
-          };
+          return new Promise<void>((resolve) => {
+            audio.onended = () => {
+              currentAudio = null;
+              onComplete?.();
+              resolve();
+            };
 
-          audio.play().catch((error) => {
-            console.error("Audio play error:", error);
-            currentAudio = null;
-            onComplete?.();
-            resolve();
+            audio.onerror = (event) => {
+              console.error("Audio playback error:", event);
+              currentAudio = null;
+              onComplete?.();
+              resolve();
+            };
+
+            audio.play().catch((error) => {
+              console.error("Audio play error:", error);
+              currentAudio = null;
+              onComplete?.();
+              resolve();
+            });
           });
-        });
+        }
       } catch (error) {
         console.error("GCP TTS error:", error);
         onComplete?.();
