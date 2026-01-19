@@ -8,49 +8,57 @@ export type PNGTuberAssets = {
   mouth_u: string;
 };
 
-// 環境変数からアセットフォルダ名を取得（デフォルト: assets01）
-const ASSETS_FOLDER = process.env.ASSETS_FOLDER || "assets01";
-const ASSETS_BASE_PATH = `/assets/${ASSETS_FOLDER}`;
-
-// Load video filename dynamically from API
-let cachedVideoFilename: string | null = null;
+// Load assets info dynamically from API
+let cachedAssetsInfo: { video: string; folder: string } | null = null;
 
 export const getAssets = async (): Promise<PNGTuberAssets> => {
-  // Use cached video filename if available
-  if (!cachedVideoFilename) {
+  // Use cached assets info if available
+  if (!cachedAssetsInfo) {
     try {
       const response = await fetch("/api/assets");
       if (response.ok) {
         const data = await response.json();
-        cachedVideoFilename = data.video;
+        cachedAssetsInfo = {
+          video: data.video,
+          folder: data.folder,
+        };
       } else {
-        console.error("Failed to load video filename, using default");
-        cachedVideoFilename = "pinkchan_mouthless_h264.mp4";
+        console.error("Failed to load assets info, using default");
+        cachedAssetsInfo = {
+          video: "pinkchan_mouthless_h264.mp4",
+          folder: "assets01",
+        };
       }
     } catch (error) {
-      console.error("Error loading video filename:", error);
-      cachedVideoFilename = "pinkchan_mouthless_h264.mp4";
+      console.error("Error loading assets info:", error);
+      cachedAssetsInfo = {
+        video: "pinkchan_mouthless_h264.mp4",
+        folder: "assets01",
+      };
     }
   }
 
+  const assetsBasePath = `/assets/${cachedAssetsInfo.folder}`;
+
   return {
-    video: `${ASSETS_BASE_PATH}/${cachedVideoFilename}`,
-    track: `${ASSETS_BASE_PATH}/mouth_track.json`,
-    mouth_closed: `${ASSETS_BASE_PATH}/mouth/closed.png`,
-    mouth_open: `${ASSETS_BASE_PATH}/mouth/open.png`,
-    mouth_half: `${ASSETS_BASE_PATH}/mouth/half.png`,
-    mouth_e: `${ASSETS_BASE_PATH}/mouth/e.png`,
-    mouth_u: `${ASSETS_BASE_PATH}/mouth/u.png`,
+    video: `${assetsBasePath}/${cachedAssetsInfo.video}`,
+    track: `${assetsBasePath}/mouth_track.json`,
+    mouth_closed: `${assetsBasePath}/mouth/closed.png`,
+    mouth_open: `${assetsBasePath}/mouth/open.png`,
+    mouth_half: `${assetsBasePath}/mouth/half.png`,
+    mouth_e: `${assetsBasePath}/mouth/e.png`,
+    mouth_u: `${assetsBasePath}/mouth/u.png`,
   };
 };
 
 // Deprecated: Use getAssets() instead
+const DEFAULT_FOLDER = "assets01";
 export const DEFAULT_ASSETS: PNGTuberAssets = {
-  video: `${ASSETS_BASE_PATH}/pinkchan_mouthless_h264.mp4`,
-  track: `${ASSETS_BASE_PATH}/mouth_track.json`,
-  mouth_closed: `${ASSETS_BASE_PATH}/mouth/closed.png`,
-  mouth_open: `${ASSETS_BASE_PATH}/mouth/open.png`,
-  mouth_half: `${ASSETS_BASE_PATH}/mouth/half.png`,
-  mouth_e: `${ASSETS_BASE_PATH}/mouth/e.png`,
-  mouth_u: `${ASSETS_BASE_PATH}/mouth/u.png`,
+  video: `/assets/${DEFAULT_FOLDER}/pinkchan_mouthless_h264.mp4`,
+  track: `/assets/${DEFAULT_FOLDER}/mouth_track.json`,
+  mouth_closed: `/assets/${DEFAULT_FOLDER}/mouth/closed.png`,
+  mouth_open: `/assets/${DEFAULT_FOLDER}/mouth/open.png`,
+  mouth_half: `/assets/${DEFAULT_FOLDER}/mouth/half.png`,
+  mouth_e: `/assets/${DEFAULT_FOLDER}/mouth/e.png`,
+  mouth_u: `/assets/${DEFAULT_FOLDER}/mouth/u.png`,
 } as const;

@@ -36,8 +36,7 @@ const createSpeakCharacter = () => {
           },
           body: JSON.stringify({
             text,
-            languageCode: "ja-JP",
-            voiceName: "ja-JP-Neural2-B",
+            // languageCode and voiceName will use server-side defaults from env vars
           }),
         });
 

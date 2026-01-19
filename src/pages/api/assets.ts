@@ -4,6 +4,7 @@ import path from "path";
 
 type Data = {
   video?: string;
+  folder?: string;
   error?: string;
 };
 
@@ -35,7 +36,7 @@ export default async function handler(
       return;
     }
 
-    res.status(200).json({ video: videoFile });
+    res.status(200).json({ video: videoFile, folder: assetsFolder });
   } catch (error: any) {
     console.error("Assets API error:", error);
     res.status(500).json({ error: error.message || "Failed to load assets" });

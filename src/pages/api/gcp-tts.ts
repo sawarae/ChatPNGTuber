@@ -39,7 +39,11 @@ export default async function handler(
     return;
   }
 
-  const { text, languageCode = "ja-JP", voiceName = "ja-JP-Neural2-B" } = req.body;
+  // Get voice configuration from environment variables
+  const defaultVoiceName = process.env.TTS_VOICE_NAME || "ja-JP-Neural2-B";
+  const defaultLanguageCode = process.env.TTS_LANGUAGE_CODE || "ja-JP";
+
+  const { text, languageCode = defaultLanguageCode, voiceName = defaultVoiceName } = req.body;
 
   if (!text) {
     res.status(400).json({ error: "Text is required" });
